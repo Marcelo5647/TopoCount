@@ -1,8 +1,3 @@
-#import matplotlib
-#matplotlib.use('Agg')
-#import matplotlib.pyplot as plt
-#import matplotlib.cm as CM
-
 import numpy as np
 import time
 import torch
@@ -14,7 +9,7 @@ import sys;
 import math
 import skimage.io as io
 from scipy import ndimage
-from scipy.misc import imresize
+from cv2 import resize
 from skimage.measure import label
 from skimage import filters
 
@@ -62,6 +57,31 @@ if __name__=="__main__":
 
     # Below are some default configurations for the datasets: ShanghaTech Part A, ShanghaTech Part B, UCF-QNRF, JHU++, NWPU-Crowd.
     # Uncomment the approporiate configuration
+    ####################################################################################
+    ## Configuration for Unreal City Park
+    ####################################################################################
+    #'''
+    model_param_path = None;       
+    checkpoints_save_path = './checkpoints/unreal_city_park_custom_topo1_patch50'
+
+    root = './datasets/CityPark/'
+    train_image_root = os.path.join(root,'train_data','images') 
+    train_dmap_root = os.path.join(root,'train_data','gt_map_custom2')
+    train_dots_root = os.path.join(root,'train_data','ground_truth_localization')
+    train_split_txt_filepath = './img_list_train.txt'
+    test_image_root = os.path.join(root,'train_data','images') 
+    test_dmap_root = os.path.join(root,'train_data','gt_map_custom2')
+    test_dots_root = os.path.join(root,'train_data','ground_truth_localization')
+    test_split_txt_filepath = './img_list_test.txt'
+
+    topo_size         = 50; # tiling patch size for persistence loss
+    start_epoch = 0         # start epoch numbering. useful if stop and continue in same directory
+    lamda_pers            = 1; # weight for persistence loss
+    lamda_dice            = 1; # weight for dice loss
+    epoch_start_pers_loss = 30 # default epoch to start adding persistence loss. Idealy chosen manually when the model starts to output reasonable predictions from which topology can be inferred
+    train_patch_size = -1 # size of image patch to use to train. -1 means whole image. otherwise random crops of size train_patch_size x train_patch_size are used
+    test_patch_size = -1 # size of image patch to use to test. -1 means whole image. otherwise random crops of size test_patch_size x test_patch_size are used. If get cuda error, change to 1024 and then run a separate evaluation on the trained epochs to select optimized model.
+    #'''
     ###################################################################################
     # Configuration for ShanghaiTech Part A
     ###################################################################################    
@@ -92,7 +112,7 @@ if __name__=="__main__":
     ####################################################################################
     ## Configuration for ShanghaiTech Part B
     ####################################################################################
-    #'''
+    '''
     model_param_path = None; 
     #model_param_path = './checkpoints/sh_partb_custom_topo1_patch50/epoch_4.pth';      
     checkpoints_save_path = './checkpoints/sh_partb_custom_topo1_patch50';
@@ -114,7 +134,7 @@ if __name__=="__main__":
     epoch_start_pers_loss = 3 # default epoch to start adding persistence loss. Idealy chosen manually when the model starts to output reasonable predictions from which topology can be inferred
     train_patch_size = -1 # size of image patch to use to train. -1 means whole image. otherwise random crops of size train_patch_size x train_patch_size are used
     test_patch_size = -1 # size of image patch to use to test. -1 means whole image. otherwise random crops of size test_patch_size x test_patch_size are used. If get cuda error, change to 1024 and then run a separate evaluation on the trained epochs to select optimized model.
-    #'''
+    '''
 
     ####################################################################################
     ## Configuration for UCF-QNRF
@@ -202,7 +222,7 @@ if __name__=="__main__":
     gt_multiplier = 1    
     gpu_or_cpu='cuda' # use cuda or cpu
     lr                = 0.00005 
-    batch_size        = 1
+    batch_size        = 1 # The script is currently working only for batch_size = 1
     #momentum          = 0.95
     epochs            = 100
     seed              = time.time()
@@ -231,9 +251,9 @@ if __name__=="__main__":
     criterion_bce = nn.BCEWithLogitsLoss() # initialize loss function
     optimizer=torch.optim.Adam(model.parameters(),lr) 
     train_dataset=CrowdDataset(train_image_root,train_dmap_root, train_dots_root, split_txt_filepath=train_split_txt_filepath,phase='train', normalize=False, aug=0, fixed_size=train_patch_size)
-    train_loader=torch.utils.data.DataLoader(train_dataset,batch_size=1,shuffle=True)
+    train_loader=torch.utils.data.DataLoader(train_dataset,batch_size=batch_size,shuffle=True)
     test_dataset=CrowdDataset(test_image_root,test_dmap_root,test_dots_root, split_txt_filepath=test_split_txt_filepath, phase='test', normalize=False, aug=0, fixed_size=test_patch_size)
-    test_loader=torch.utils.data.DataLoader(test_dataset,batch_size=1,shuffle=False)
+    test_loader=torch.utils.data.DataLoader(test_dataset,batch_size=batch_size,shuffle=False)
     
     if not os.path.exists(checkpoints_save_path):
         os.mkdir(checkpoints_save_path)
@@ -322,10 +342,10 @@ if __name__=="__main__":
                         if(len(likelihood.shape) < 2 or len(groundtruth.shape) < 2 ):
                             continue;
                         if(topo_size >= 100):
-                            likelihood_2 = imresize(likelihood, (likelihood.shape[0]//2, likelihood.shape[1]//2)) 
+                            likelihood_2 = resize(likelihood, (likelihood.shape[0]//2, likelihood.shape[1]//2)) 
                             if(likelihood_2.max() > 0):
                                 likelihood_2 = likelihood_2/likelihood_2.max()*likelihood.max()
-                            groundtruth_2 = imresize(groundtruth, (groundtruth.shape[0]//2, groundtruth.shape[1]//2))
+                            groundtruth_2 = resize(groundtruth, (groundtruth.shape[0]//2, groundtruth.shape[1]//2))
                             if(groundtruth_2.max() > 0):
                                 groundtruth_2 = groundtruth_2/groundtruth_2.max()*groundtruth.max()
                             pd_lh, bcp_lh, dcp_lh = compute_persistence_2DImg_1DHom_lh(-likelihood_2*mm, padwidth = padwidth, homo_dim=0)

@@ -383,9 +383,10 @@ def run_eval_model(model_param_path, test_loader, out_dir, log_file, thresh_low=
         #io.imsave(os.path.join(out_dir, img_name.replace('.jpg','_likelihood'+'.png')), (et_sig*255).astype(np.uint8));
         #io.imsave(os.path.join(out_dir, img_name.replace('.jpg','_hard_'+str(thresh_low)+'-'+str(thresh_high)+'_err'+str(err)+'.png')), (e_hard2*255).astype(np.uint8));
 
-        et_dmap.astype(np.float16).dump(os.path.join(out_dir, img_name.replace('.jpg','_raw'+'.npy')))
-        et_sig.astype(np.float16).dump(os.path.join(out_dir, img_name.replace('.jpg','_likelihood'+'.npy')))
-        e_hard2.astype(np.uint8).dump(os.path.join(out_dir, img_name.replace('.jpg','_hard_'+str(thresh_low)+'-'+str(thresh_high)+'_err'+str(err)+'.npy')))
+        _, img_extension = os.path.splitext(img_name)
+        et_dmap.astype(np.float16).dump(os.path.join(out_dir, img_name.replace(img_extension,'_raw'+'.npy')))
+        et_sig.astype(np.float16).dump(os.path.join(out_dir, img_name.replace(img_extension,'_likelihood'+'.npy')))
+        e_hard2.astype(np.uint8).dump(os.path.join(out_dir, img_name.replace(img_extension,'_hard_'+str(thresh_low)+'-'+str(thresh_high)+'_err'+str(err)+'.npy')))
 
         del img,gt_dots, et_dmap, et_sig
         torch.cuda.empty_cache()
@@ -402,6 +403,19 @@ if __name__=="__main__":
 
     # Below are some default configurations for the datasets: ShanghaTech Part A, ShanghaTech Part B, UCF-QNRF, JHU++, NWPU-Crowd.
     # Uncomment the approporiate configuration
+    ####################################################################################
+    ## Configuration for CityPark
+    ####################################################################################
+    #'''
+    models_root_dir = './pretrained_models'
+    model_filename = 'topocount_city_park.pth'
+    out_dir = './eval/city_park_custom_topo1_patch50_topocount_test'
+    out_filename = 'out.txt'
+    root = './datasets/CityPark/'
+    test_image_root = os.path.join(root, 'train_data', 'images')
+    test_dots_root = os.path.join(root, 'train_data', 'ground_truth_localization')
+    test_split_txt_filepath = './eval/img_list_test.txt'
+    #'''
     ####################################################################################
     ## Configuration for ShanghaiTech Part A - Test
     ####################################################################################
@@ -491,7 +505,7 @@ if __name__=="__main__":
     #####################################################################################
     ### Configuration for NWPU-Crowd - Test
     #####################################################################################
-    #'''
+    '''
     models_root_dir = './pretrained_models'
     model_filename = 'topocount_nwpu.pth'
     #out_dir = './eval/nwpu_custom_topo1_patch100_e48_test'
@@ -501,7 +515,7 @@ if __name__=="__main__":
     test_image_root = os.path.join(root,'images')
     test_dots_root = os.path.join(root,'ground-truth_dots') 
     test_split_txt_filepath = os.path.join(root,'test.txt')    
-    #'''
+    '''
 
     ####################################################################################
 

@@ -31,8 +31,8 @@ class CrowdDataset(Dataset):
                                if os.path.isfile(os.path.join(img_root,filename))]
         else:
             img_list = np.loadtxt(split_txt_filepath, dtype=str)        
-            self.img_names=[filename + '.jpg' for filename in img_list[:,0] \
-                               if os.path.isfile(os.path.join(img_root,filename+ '.jpg'))]
+            self.img_names=[filename for filename in img_list \
+                               if os.path.isfile(os.path.join(img_root,filename))]
 
         self.n_samples=len(self.img_names)
 
@@ -50,20 +50,23 @@ class CrowdDataset(Dataset):
     def __getitem__(self,index):
         assert index <= len(self), 'index range error'
         img_name=self.img_names[index]
-        img=plt.imread(os.path.join(self.img_root,img_name))/255# convert from [0,255] to [0,1]
+        if '.jpg' in img_name or '.png' in img_name:
+            img_path = os.path.join(self.img_root,img_name)
+            img=plt.imread(img_path)/255 # convert from [0,255] to [0,1]
         
         if len(img.shape)==2: # expand grayscale image to three channel.
             img=img[:,:,np.newaxis]
             img=np.concatenate((img,img,img),2)
         img=img[:,:,0:3]
 
-        gtdot_path = os.path.join(self.gt_dot_root,img_name.replace('.jpg','_gt_dots.npy'));
+        _, img_extension = os.path.splitext(img_name)
+        gtdot_path = os.path.join(self.gt_dot_root,img_name.replace(img_extension,'_gt_dots.npy'))
         if(os.path.isfile(gtdot_path)):
-            gt_dot=np.load(gtdot_path)
+            gt_dot=np.load(gtdot_path, allow_pickle=True)
         else:
-            gtdot_path = os.path.join(self.gt_dot_root,img_name.replace('.jpg','.npy'));
+            gtdot_path = os.path.join(self.gt_dot_root,img_name.replace(img_extension,'.npy'))
             if(os.path.isfile(gtdot_path)):
-                gt_dot=np.load(gtdot_path)
+                gt_dot=np.load(gtdot_path, allow_pickle=True)
             else:
                 gt_dot=np.zeros((img.shape[0], img.shape[1]))
 

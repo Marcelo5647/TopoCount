@@ -32,9 +32,7 @@ class CrowdDataset(Dataset):
             self.img_names=[filename for filename in os.listdir(img_root) \
                                if os.path.isfile(os.path.join(img_root,filename))]
         else:
-            img_list = np.loadtxt(split_txt_filepath, dtype=str)        
-            self.img_names=[filename + '.jpg' for filename in img_list[:,0] \
-                               if os.path.isfile(os.path.join(img_root,filename+ '.jpg'))]
+            self.img_names = np.loadtxt(split_txt_filepath, dtype=str)        
 
         self.n_samples=len(self.img_names)
 
@@ -59,20 +57,21 @@ class CrowdDataset(Dataset):
             img=np.concatenate((img,img,img),2)
         img=img[:,:,0:3]
 
-        gt_path = os.path.join(self.gt_dmap_root,img_name.replace('.jpg','.npy'));
+        _, img_extension = os.path.splitext(img_name)
+        gt_path = os.path.join(self.gt_dmap_root,img_name.replace(img_extension,'.npy'));
         if(os.path.isfile(gt_path)):
             print('gt_path',gt_path)
-            gt_dmap=np.load(gt_path)
+            gt_dmap=np.load(gt_path, allow_pickle=True)
         else:
             gt_dmap=np.zeros((img.shape[0], img.shape[1]))
 
-        gtdot_path = os.path.join(self.gt_dot_root,img_name.replace('.jpg','_gt_dots.npy'));
+        gtdot_path = os.path.join(self.gt_dot_root,img_name.replace(img_extension,'.npy'));
         if(os.path.isfile(gtdot_path)):
-            gt_dot=np.load(gtdot_path)
+            gt_dot=np.load(gtdot_path, allow_pickle=True)
         else:
-            gtdot_path = os.path.join(self.gt_dot_root,img_name.replace('.jpg','.npy'));
+            gtdot_path = os.path.join(self.gt_dot_root,img_name.replace(img_extension,'.npy'));
             if(os.path.isfile(gtdot_path)):
-                gt_dot=np.load(gtdot_path)
+                gt_dot=np.load(gtdot_path, allow_pickle=True)
             else:
                 gt_dot=np.zeros((img.shape[0], img.shape[1]))
 
